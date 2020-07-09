@@ -18,6 +18,36 @@ import threading
 import timeit
 
 
+def fn_to_regex(fn: str) -> str:
+    """
+    @brief Convert fnmatch pattern into regex pattern (directory separator safe)
+
+    @param fn The fnmatch pattern
+
+    @return The regex pattern
+    """
+
+    return (
+        fnmatch.translate(fn)
+        # match both UNIX/Windows directory separators
+        .replace(r"\/", r"[\\/]")
+        # remove the \Z (i.e., $)
+        .replace(r"\Z", "")
+    )
+
+
+def merge_regexes(regexes) -> str:
+    """
+    @brief Merge regexes into a single one
+
+    @param regexes The regexes
+
+    @return The merged regex
+    """
+
+    return "(?:" + ")|(?:".join(regexes) + ")"
+
+
 class Settings:
     def __init__(self, view, args):
         self.user = sublime.load_settings("TodoReview.sublime-settings")
@@ -42,14 +72,15 @@ class Engine:
         patt_patterns = settings.get("patterns", {})
         patt_files = settings.get("exclude_files", [])
         patt_folders = settings.get("exclude_folders", [])
-        match_patterns = "|".join(patt_patterns.values())
-        match_files = [fnmatch.translate(p) for p in patt_files]
-        match_folders = [fnmatch.translate(p) for p in patt_folders]
+
+        match_patterns = merge_regexes(patt_patterns.values())
+        match_files = merge_regexes([fn_to_regex(p) for p in patt_files])
+        match_folders = merge_regexes([fn_to_regex(p) for p in patt_folders])
 
         self.patterns = re.compile(match_patterns, case)
         self.priority = re.compile(r"\(([0-9]{1,2})\)")
-        self.exclude_files = [re.compile(p) for p in match_files]
-        self.exclude_folders = [re.compile(p) for p in match_folders]
+        self.exclude_files = re.compile(match_files, case)
+        self.exclude_folders = re.compile(match_folders, case)
         self.open = self.view.window().views()
         self.open_files = [v.file_name() for v in self.open if v.file_name()]
 
@@ -58,7 +89,7 @@ class Engine:
         for dirpath in self.dirpaths:
             dirpath = self.resolve(dirpath)
             for dirp, dirnames, filepaths in os.walk(dirpath, followlinks=True):
-                if any(p.search(dirp) for p in self.exclude_folders):
+                if self.exclude_folders.search(dirp + "/"):
                     continue
                 for filepath in filepaths:
                     self.filepaths.append(os.path.join(dirp, filepath))
@@ -66,9 +97,9 @@ class Engine:
             p = self.resolve(filepath)
             if p in seen_paths:
                 continue
-            if any(p.search(filepath) for p in self.exclude_folders):
+            if self.exclude_folders.search(filepath):
                 continue
-            if any(p.search(filepath) for p in self.exclude_files):
+            if self.exclude_files.search(filepath):
                 continue
             seen_paths.append(p)
             yield p
