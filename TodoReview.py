@@ -64,7 +64,7 @@ class Engine:
     def __init__(self, dirpaths, filepaths, view):
         self.view = view
         self.dirpaths = dirpaths
-        self.filepaths = filepaths
+        self.filepaths = set(filepaths)
         if settings.get("case_sensitive", False):
             case = 0
         else:
@@ -85,24 +85,24 @@ class Engine:
         self.open_files = [v.file_name() for v in self.open if v.file_name()]
 
     def files(self):
-        seen_paths = []
+        seen_paths = set()
         for dirpath in self.dirpaths:
             dirpath = self.resolve(dirpath)
             for dirp, dirnames, filepaths in os.walk(dirpath, followlinks=True):
-                if self.exclude_folders.search(dirp + "/"):
+                if self.exclude_folders.search(dirp + os.sep):
                     continue
                 for filepath in filepaths:
-                    self.filepaths.append(os.path.join(dirp, filepath))
+                    self.filepaths.add(os.path.join(dirp, filepath))
         for filepath in self.filepaths:
-            p = self.resolve(filepath)
-            if p in seen_paths:
+            filepath = self.resolve(filepath)
+            if filepath in seen_paths:
                 continue
             if self.exclude_folders.search(filepath):
                 continue
             if self.exclude_files.search(filepath):
                 continue
-            seen_paths.append(p)
-            yield p
+            seen_paths.add(filepath)
+            yield filepath
 
     def extract(self, files):
         encoding = settings.get("encoding", "utf-8")
