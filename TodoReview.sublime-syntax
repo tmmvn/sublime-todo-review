@@ -1,0 +1,26 @@
+%YAML 1.2
+---
+# http://www.sublimetext.com/docs/3/syntax.html
+hidden: true
+name: TodoReview
+scope: text.todo-list
+contexts:
+  main:
+    # Header
+    - match: ^\/\/.*$
+      scope: comment
+    # Titles
+    - match: ^##.*$
+      scope: string
+    # Line Num
+    - match: ':[0-9]+\s'
+      scope: entity.name.function
+    # Priority
+    - match: '\(([0-9]{1,2})\)'
+      scope: variable
+    # Brackets
+    - match: '\[(.*?)\]'
+      scope: entity.name.class
+    # @tags
+    - match: \@\S+
+      scope: keyword

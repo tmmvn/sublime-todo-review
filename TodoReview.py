@@ -128,10 +128,7 @@ class Thread(threading.Thread):
 
 	def run(self):
 		self.start = timeit.default_timer()
-		if sys.version_info < (3,0,0):
-			sublime.set_timeout(self.thread, 1)
-		else:
-			self.thread()
+		self.thread()
 
 	def thread(self):
 		results = list(self.engine.process())
@@ -221,10 +218,7 @@ class TodoReviewRender(sublime_plugin.TextCommand):
 		view.set_name('TodoReview')
 		view.set_scratch(True)
 		view.settings().set('todo_results', True)
-		if sys.version_info < (3,0,0):
-			view.set_syntax_file('Packages/TodoReview/TodoReview.hidden-tmLanguage')
-		else:
-			view.assign_syntax('Packages/TodoReview/TodoReview.hidden-tmLanguage')
+		view.set_syntax_file('Packages/TodoReview/TodoReview.sublime-syntax')
 		view.settings().set('line_padding_bottom', 2)
 		view.settings().set('line_padding_top', 2)
 		view.settings().set('word_wrap', False)
