@@ -10,6 +10,9 @@
         "/.git/",
         "/.hg/",
         "/.svn/",
+        "/.venv/",
+        "/node_modules/",
+        "/vendor/",
     ],
     "exclude_files": [
         "*.sublime-workspace",
