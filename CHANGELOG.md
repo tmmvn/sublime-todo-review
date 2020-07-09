@@ -1,3 +1,10 @@
+## 4.0.0 - 2020/07/09
+
+- forked by Jack Cherng <jfcherng@gmail.com> (@jfcherng)
+- pref: increase performance on large projects
+- feat: drop ST 2 (Python 2)
+- chore: remove .no-sublime-package
+
 ## 3.0.13 - 09/30/2018
 
 - Add: "auto" option for `render_folder_depth` (#166, thanks @dbeckwith)
