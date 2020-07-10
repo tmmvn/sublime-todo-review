@@ -1,10 +1,3 @@
-"""
-SublimeTodoReview
-A SublimeText 3 plugin for reviewing todo (and other) comments within your code.
-
-@author Jonathan Delgado (Initial Repo by @robcowie and ST3 update by @dnatag)
-"""
-
 import datetime
 import fnmatch
 import io
