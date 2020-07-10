@@ -374,6 +374,8 @@ class TodoReviewResults(sublime_plugin.TextCommand):
             target = results[sel]
             self.settings.set("selected_result", sel)
             region = target.cover(target)
-            self.view.add_regions("selection", [region], "selected", "dot")
+            self.view.add_regions(
+                "selection", [region], "todo-list.selected", "circle", sublime.DRAW_NO_FILL
+            )
             self.view.show(sublime.Region(region.a, region.a + 5))
             return

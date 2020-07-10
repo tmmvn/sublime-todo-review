@@ -1,26 +1,52 @@
 %YAML 1.2
 ---
 # http://www.sublimetext.com/docs/3/syntax.html
+version: 2
 hidden: true
 name: TodoReview
 scope: text.todo-list
+
 contexts:
   main:
-    # Header
-    - match: ^\/\/.*$
-      scope: comment
-    # Titles
-    - match: ^##.*$
-      scope: string
-    # Line Num
-    - match: ':[0-9]+\s'
-      scope: entity.name.function
-    # Priority
-    - match: '\(([0-9]{1,2})\)'
-      scope: variable
-    # Brackets
-    - match: '\[(.*?)\]'
-      scope: entity.name.class
-    # @tags
-    - match: \@\S+
-      scope: keyword
+    # header
+    - match: ^(//)(.*)$
+      captures:
+        0: comment.line.double-slash
+        1: punctuation.definition.comment
+    # title
+    - match: ^(##)(.*)$
+      scope: punctuation.definition.title
+      captures:
+        0: meta.title
+        1: punctuation.definition.title
+    # item num
+    - match: ^(\d+)(\.)(?=\s)
+      captures:
+        0: meta.item-number
+        1: constant.numeric.item-number
+        2: punctuation.separator.item
+    # line num
+    - match: '(:)(\d+)(?=\s)'
+      captures:
+        1: punctuation.separator.line-number
+        2: constant.numeric.line-number
+    # priority
+    - match: (\()(\d+)(\))
+      captures:
+        0: meta.priority
+        1: punctuation.definition.priority.begin
+        2: constant.numeric.priority
+        3: punctuation.definition.priority.end
+    # bracket
+    - match: (\[)([^\]]*)(\])
+      captures:
+        0: meta.entity
+        1: punctuation.definition.entity.begin
+        2: entity.name.class
+        3: punctuation.definition.entity.end
+    # @tag
+    - match: (@)([0-9a-zA-Z_\-]+)(?=$|\s)
+      captures:
+        0: meta.tag
+        1: punctuation.definition.tag
+        2: keyword.tag
