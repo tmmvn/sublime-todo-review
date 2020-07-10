@@ -34,7 +34,7 @@ def fn_to_regex(fn: str) -> str:
     return (
         fnmatch.translate(fn)
         # match both UNIX/Windows directory separators
-        .replace(r"\/", r"[\\/]")
+        .replace("/", r"[\\/]")
         # remove the \Z (i.e., $)
         .replace(r"\Z", "")
     )
