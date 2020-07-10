@@ -13,9 +13,13 @@ import os
 import re
 import sublime
 import sublime_plugin
-import sys
 import threading
 import timeit
+
+from typing import Any, Callable, Dict, Generator, Iterable, Iterator, List
+
+
+TYPING_RESULT = Dict[str, Any]
 
 
 def fn_to_regex(fn: str) -> str:
@@ -36,7 +40,7 @@ def fn_to_regex(fn: str) -> str:
     )
 
 
-def merge_regexes(regexes) -> str:
+def merge_regexes(regexes: Iterable[str]) -> str:
     """
     @brief Merge regexes into a single one
 
@@ -49,19 +53,19 @@ def merge_regexes(regexes) -> str:
 
 
 class Settings:
-    def __init__(self, view, args):
+    def __init__(self, view: sublime.View, args: Dict[str, Any]):
         self.user = sublime.load_settings("TodoReview.sublime-settings")
         if not args:
             self.proj = view.settings().get("todoreview", {})
         else:
             self.proj = args
 
-    def get(self, key, default):
+    def get(self, key: str, default: Any) -> Any:
         return self.proj.get(key, self.user.get(key, default))
 
 
 class Engine:
-    def __init__(self, dirpaths, filepaths, view):
+    def __init__(self, dirpaths: Iterable[str], filepaths: Iterable[str], view: sublime.View):
         self.view = view
         self.dirpaths = dirpaths
         self.filepaths = set(filepaths)
@@ -84,7 +88,7 @@ class Engine:
         self.open = self.view.window().views()
         self.open_files = [v.file_name() for v in self.open if v.file_name()]
 
-    def files(self):
+    def files(self) -> Generator[str, None, None]:
         seen_paths = set()
         for dirpath in self.dirpaths:
             dirpath = self.resolve(dirpath)
@@ -104,7 +108,7 @@ class Engine:
             seen_paths.add(filepath)
             yield filepath
 
-    def extract(self, files):
+    def extract(self, files: Iterable[str]) -> Generator[TYPING_RESULT, None, None]:
         encoding = settings.get("encoding", "utf-8")
         for p in files:
             try:
@@ -142,10 +146,10 @@ class Engine:
                 if f is not None and type(f) is not list:
                     f.close()
 
-    def process(self):
+    def process(self) -> Generator[TYPING_RESULT, None, None]:
         return self.extract(self.files())
 
-    def resolve(self, directory):
+    def resolve(self, directory: str) -> str:
         if settings.get("resolve_symlinks", True):
             return os.path.realpath(os.path.expanduser(os.path.abspath(directory)))
         else:
@@ -153,32 +157,32 @@ class Engine:
 
 
 class Thread(threading.Thread):
-    def __init__(self, engine, callback):
+    def __init__(self, engine: Engine, callback: Callable):
         self.i = 0
         self.engine = engine
         self.callback = callback
         self.lock = threading.RLock()
         threading.Thread.__init__(self)
 
-    def run(self):
+    def run(self) -> None:
         self.start = timeit.default_timer()
         self.thread()
 
-    def thread(self):
+    def thread(self) -> None:
         results = list(self.engine.process())
         self.callback(results, self.finish(), self.i)
 
-    def finish(self):
+    def finish(self) -> int:
         return round(timeit.default_timer() - self.start, 2)
 
-    def increment(self):
+    def increment(self) -> None:
         with self.lock:
             self.i += 1
             sublime.status_message("TodoReview: {0} files scanned".format(self.i))
 
 
 class TodoReviewCommand(sublime_plugin.TextCommand):
-    def run(self, edit, **args):
+    def run(self, edit: sublime.Edit, **args: Dict[str, Any]) -> None:
         global settings, thread
         filepaths = []
         self.args = args
@@ -210,7 +214,7 @@ class TodoReviewCommand(sublime_plugin.TextCommand):
         thread = Thread(engine, self.render)
         thread.start()
 
-    def render(self, results, time, count):
+    def render(self, results: List[TYPING_RESULT], time: int, count: int) -> None:
         self.view.run_command(
             "todo_review_render",
             {"results": results, "time": time, "count": count, "args": self.args},
@@ -218,7 +222,14 @@ class TodoReviewCommand(sublime_plugin.TextCommand):
 
 
 class TodoReviewRender(sublime_plugin.TextCommand):
-    def run(self, edit, results, time, count, args):
+    def run(
+        self,
+        edit: sublime.Edit,
+        results: List[TYPING_RESULT],
+        time: int,
+        count: int,
+        args: Dict[str, Any],
+    ) -> None:
         self.args = args
         self.edit = edit
         self.time = time
@@ -232,17 +243,18 @@ class TodoReviewRender(sublime_plugin.TextCommand):
         self.args["settings"] = settings.proj
         self.rview.settings().set("review_args", self.args)
 
-    def sort(self):
+    def sort(self) -> Iterator[TYPING_RESULT]:
         self.largest = 0
         for item in self.results:
             self.largest = max(len(self.draw_file(item)), self.largest)
         self.largest = min(self.largest, settings.get("render_maxspaces", 50)) + 6
         w = settings.get("patterns_weight", {})
-        key = lambda m: (str(w.get(m["patt"].upper(), m["patt"])), m["priority"])
-        results = sorted(self.results, key=key)
+        results = sorted(
+            self.results, key=lambda m: (str(w.get(m["patt"].upper(), m["patt"])), m["priority"])
+        )
         return itertools.groupby(results, key=lambda m: m["patt"])
 
-    def get_view(self):
+    def get_view(self) -> sublime.View:
         self.window = sublime.active_window()
         for view in self.window.views():
             if view.settings().get("todo_results", False):
@@ -259,7 +271,7 @@ class TodoReviewRender(sublime_plugin.TextCommand):
         view.settings().set("command_mode", True)
         return view
 
-    def draw_header(self):
+    def draw_header(self) -> None:
         forms = settings.get("render_header_format", "%d - %c files in %t secs")
         datestr = settings.get("render_header_date", "%A %m/%d/%y at %I:%M%p")
         if not forms:
@@ -276,7 +288,7 @@ class TodoReviewRender(sublime_plugin.TextCommand):
         res += "\n"
         self.rview.insert(self.edit, self.rview.size(), res)
 
-    def draw_results(self):
+    def draw_results(self) -> None:
         data = [x[:] for x in [[]] * 2]
         for patt, items in self.sorted:
             items = list(items)
@@ -298,7 +310,7 @@ class TodoReviewRender(sublime_plugin.TextCommand):
         d = dict(("{0},{1}".format(k.a, k.b), v) for k, v in zip(data[0], data[1]))
         self.rview.settings().set("review_results", d)
 
-    def draw_file(self, item):
+    def draw_file(self, item: TYPING_RESULT) -> str:
         if settings.get("render_include_folder", False):
             depth = settings.get("render_folder_depth", 1)
             if depth == "auto":
@@ -317,7 +329,7 @@ class TodoReviewRender(sublime_plugin.TextCommand):
 
 
 class TodoReviewResults(sublime_plugin.TextCommand):
-    def run(self, edit, **args):
+    def run(self, edit: sublime.Edit, **args: Dict[str, Any]) -> None:
         self.settings = self.view.settings()
         if not self.settings.get("review_results"):
             return
