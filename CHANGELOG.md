@@ -1,3 +1,9 @@
+## 5.0.0 - 2020/07/10
+
+- feat: popup dialog if file not saved
+- fix: `fn_to_regex()` doesn't match all dir separators
+- feat: drop ST 3 and use Python 3.8
+
 ## 4.0.0 - 2020/07/09
 
 - forked by Jack Cherng <jfcherng@gmail.com> (@jfcherng)
