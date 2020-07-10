@@ -194,7 +194,7 @@ class TodoReviewCommand(sublime_plugin.TextCommand):
                 paths = []
                 filepaths = [self.view.file_name()]
             else:
-                print("TodoReview: File must be saved first")
+                sublime.message_dialog("TodoReview: File must be saved first")
                 return
         else:
             if not paths and settings.get("include_paths", False):
