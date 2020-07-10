@@ -1,3 +1,8 @@
+## 5.1.0 - 2020/07/11
+
+- feat: improved color highlighting
+- chore: update todo patterns
+
 ## 5.0.0 - 2020/07/10
 
 - feat: popup dialog if file not saved
