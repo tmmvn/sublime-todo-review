@@ -1,8 +1,7 @@
 {
     "patterns": {
-        "TODO_1": "TODO[\\s]*?:[\\s]*(?P<todo_1>.*)$",
-        "TODO_2": "\\*\\s*@todo\\s+(?P<todo_2>(?:(?!\\*/|$).)*)",
-        "TODO_3": "//\\s*@todo\\s+(?P<todo_3>.*)$",
+        "TODO_1": "TODO\\s*:\\s*(?P<todo_1>.*)",
+        "TODO_2": "@todo\\s+(?P<todo_2>((?!\\s*\\*/).)*)",
     },
     "patterns_weight": {
     },
