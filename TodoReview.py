@@ -63,9 +63,9 @@ class Engine:
         self.dirpaths = dirpaths
         self.filepaths = set(filepaths)
         if settings.get("case_sensitive", False):
-            case = 0
+            re_case = 0
         else:
-            case = re.IGNORECASE
+            re_case = re.IGNORECASE
         patt_patterns = settings.get("patterns", {})
         patt_files = settings.get("exclude_files", [])
         patt_folders = settings.get("exclude_folders", [])
@@ -74,10 +74,10 @@ class Engine:
         match_files = merge_regexes([fn_to_regex(p) for p in patt_files])
         match_folders = merge_regexes([fn_to_regex(p) for p in patt_folders])
 
-        self.patterns = re.compile(match_patterns, case)
+        self.patterns = re.compile(match_patterns, re_case)
         self.priority = re.compile(r"\(([0-9]{1,2})\)")
-        self.exclude_files = re.compile(match_files, case)
-        self.exclude_folders = re.compile(match_folders, case)
+        self.exclude_files = re.compile(match_files, re_case)
+        self.exclude_folders = re.compile(match_folders, re_case)
         self.open = self.view.window().views()
         self.open_files = [v.file_name() for v in self.open if v.file_name()]
 
@@ -255,9 +255,9 @@ class TodoReviewRender(sublime_plugin.TextCommand):
                 return view
         view = self.window.new_file()
         view.set_name("TodoReview")
+        view.set_syntax_file("Packages/TodoReview/TodoReview.sublime-syntax")
         view.set_scratch(True)
         view.settings().set("todo_results", True)
-        view.set_syntax_file("Packages/TodoReview/TodoReview.sublime-syntax")
         view.settings().set("line_padding_bottom", 2)
         view.settings().set("line_padding_top", 2)
         view.settings().set("word_wrap", False)
@@ -324,8 +324,10 @@ class TodoReviewRender(sublime_plugin.TextCommand):
 class TodoReviewResults(sublime_plugin.TextCommand):
     def run(self, edit: sublime.Edit, **args: Dict[str, Any]) -> None:
         self.settings = self.view.settings()
+
         if not self.settings.get("review_results"):
             return
+
         if args.get("open"):
             window = self.view.window()
             index = int(self.settings.get("selected_result", -1))
@@ -336,11 +338,13 @@ class TodoReviewResults(sublime_plugin.TextCommand):
             view = window.open_file(p, sublime.ENCODED_POSITION)
             window.focus_view(view)
             return
+
         if args.get("refresh"):
             args = self.settings.get("review_args")
             self.view.run_command("todo_review", args)
             self.settings.erase("selected_result")
             return
+
         if args.get("direction"):
             d = args.get("direction")
             results = self.view.get_regions("results")
