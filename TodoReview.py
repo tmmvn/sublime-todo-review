@@ -109,7 +109,7 @@ class Engine:
                     for view in self.open:
                         if view.file_name() == p:
                             f = []
-                            lines = view.lines(sublime.Region(0, view.size()))
+                            lines = view.lines(sublime.Region(0, len(view)))
                             for line in lines:
                                 f.append(view.substr(line))
                             break
@@ -208,20 +208,17 @@ class TodoReviewCommand(sublime_plugin.TextCommand):
         thread.start()
 
     def render(self, results: List[TYPING_RESULT], time: int, count: int) -> None:
+        # fmt: off
         self.view.run_command(
             "todo_review_render",
             {"results": results, "time": time, "count": count, "args": self.args},
         )
+        # fmt: on
 
 
 class TodoReviewRender(sublime_plugin.TextCommand):
     def run(
-        self,
-        edit: sublime.Edit,
-        results: List[TYPING_RESULT],
-        time: int,
-        count: int,
-        args: Dict[str, Any],
+        self, edit: sublime.Edit, results: List[TYPING_RESULT], time: int, count: int, args: Dict[str, Any],
     ) -> None:
         self.args = args
         self.edit = edit
@@ -242,16 +239,14 @@ class TodoReviewRender(sublime_plugin.TextCommand):
             self.largest = max(len(self.draw_file(item)), self.largest)
         self.largest = min(self.largest, settings.get("render_maxspaces", 50)) + 6
         w = settings.get("patterns_weight", {})
-        results = sorted(
-            self.results, key=lambda m: (str(w.get(m["patt"].upper(), m["patt"])), m["priority"])
-        )
+        results = sorted(self.results, key=lambda m: (str(w.get(m["patt"].upper(), m["patt"])), m["priority"]))
         return itertools.groupby(results, key=lambda m: m["patt"])
 
     def get_view(self) -> sublime.View:
         self.window = sublime.active_window()
         for view in self.window.views():
             if view.settings().get("todo_results", False):
-                view.erase(self.edit, sublime.Region(0, view.size()))
+                view.erase(self.edit, sublime.Region(0, len(view)))
                 return view
         view = self.window.new_file()
         view.set_name("TodoReview")
@@ -275,18 +270,16 @@ class TodoReviewRender(sublime_plugin.TextCommand):
             return
         date = datetime.datetime.now().strftime(datestr)
         res = "// "
-        res += (
-            forms.replace("%d", date).replace("%t", str(self.time)).replace("%c", str(self.count))
-        )
+        res += forms.replace("%d", date).replace("%t", str(self.time)).replace("%c", str(self.count))
         res += "\n"
-        self.rview.insert(self.edit, self.rview.size(), res)
+        self.rview.insert(self.edit, len(self.rview), res)
 
     def draw_results(self) -> None:
         data = [x[:] for x in [[]] * 2]
         for patt, items in self.sorted:
             items = list(items)
             res = "\n## %t (%n)\n".replace("%t", patt.upper()).replace("%n", str(len(items)))
-            self.rview.insert(self.edit, self.rview.size(), res)
+            self.rview.insert(self.edit, len(self.rview), res)
             for idx, item in enumerate(items, 1):
                 line = "%i. %f".replace("%i", str(idx)).replace("%f", self.draw_file(item))
                 res = (
@@ -294,9 +287,9 @@ class TodoReviewRender(sublime_plugin.TextCommand):
                     .replace("%s", " " * max((self.largest - len(line)), 1))
                     .replace("%n", item["note"])
                 )
-                start = self.rview.size()
+                start = len(self.rview)
                 self.rview.insert(self.edit, start, res)
-                region = sublime.Region(start, self.rview.size())
+                region = sublime.Region(start, len(self.rview))
                 data[0].append(region)
                 data[1].append(item)
         self.rview.add_regions("results", data[0], "")
@@ -371,8 +364,6 @@ class TodoReviewResults(sublime_plugin.TextCommand):
             target = results[sel]
             self.settings.set("selected_result", sel)
             region = target.cover(target)
-            self.view.add_regions(
-                "selection", [region], "todo-list.selected", "circle", sublime.DRAW_NO_FILL
-            )
+            self.view.add_regions("selection", [region], "todo-list.selected", "circle", sublime.DRAW_NO_FILL)
             self.view.show(sublime.Region(region.a, region.a + 5))
             return
