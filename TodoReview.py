@@ -250,7 +250,7 @@ class TodoReviewRender(sublime_plugin.TextCommand):
                 return view
         view = self.window.new_file()
         view.set_name("TodoReview")
-        view.set_syntax_file("Packages/TodoReview/TodoReview.sublime-syntax")
+        view.assign_syntax("scope:text.todo-list")
         view.set_scratch(True)
         view.settings().set("todo_results", True)
         view.settings().set("line_padding_bottom", 2)
