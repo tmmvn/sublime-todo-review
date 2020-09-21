@@ -1,3 +1,7 @@
+## 5.1.1 - 2020/09/21
+
+- fix: replace set_syntax_file() with assign_syntax()
+
 ## 5.1.0 - 2020/07/11
 
 - feat: improved color highlighting
