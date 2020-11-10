@@ -9,10 +9,12 @@ import sublime_plugin
 import threading
 import timeit
 
-from typing import Any, Callable, Dict, Generator, Iterable, Iterator, List
-
+from typing import Any, Callable, Dict, Generator, Iterable, Iterator, List, cast
 
 TYPING_RESULT = Dict[str, Any]
+
+PACKAGE_NAME = __package__.partition(".")[0]
+TODO_SYNTAX_FILE = "Packages/{}/TodoReview.sublime-syntax".format(PACKAGE_NAME)
 
 
 def fn_to_regex(fn: str) -> str:
@@ -42,14 +44,16 @@ def merge_regexes(regexes: Iterable[str]) -> str:
     @return The merged regex
     """
 
-    return "(?:" + ")|(?:".join(regexes) + ")"
+    merged = "(?:" + ")|(?:".join(regexes) + ")"
+
+    return "" if merged == "(?:)" else merged
 
 
 class Settings:
     def __init__(self, view: sublime.View, args: Dict[str, Any]):
         self.user = sublime.load_settings("TodoReview.sublime-settings")
         if not args:
-            self.proj = view.settings().get("todoreview", {})
+            self.proj = cast(Dict[str, Any], view.settings().get("todoreview", {}))
         else:
             self.proj = args
 
@@ -71,8 +75,8 @@ class Engine:
         patt_folders = settings.get("exclude_folders", [])
 
         match_patterns = merge_regexes(patt_patterns.values())
-        match_files = merge_regexes([fn_to_regex(p) for p in patt_files])
-        match_folders = merge_regexes([fn_to_regex(p) for p in patt_folders])
+        match_files = merge_regexes(map(fn_to_regex, patt_files))
+        match_folders = merge_regexes(map(fn_to_regex, patt_folders))
 
         self.patterns = re.compile(match_patterns, re_case)
         self.priority = re.compile(r"\(([0-9]{1,2})\)")
@@ -85,7 +89,7 @@ class Engine:
         seen_paths = set()
         for dirpath in self.dirpaths:
             dirpath = self.resolve(dirpath)
-            for dirp, dirnames, filepaths in os.walk(dirpath, followlinks=True):
+            for dirp, _, filepaths in os.walk(dirpath, followlinks=True):
                 if self.exclude_folders.search(dirp + os.sep):
                     continue
                 for filepath in filepaths:
@@ -106,16 +110,16 @@ class Engine:
         for p in files:
             try:
                 if p in self.open_files:
+                    lines = []
                     for view in self.open:
                         if view.file_name() == p:
-                            f = []
-                            lines = view.lines(sublime.Region(0, len(view)))
-                            for line in lines:
-                                f.append(view.substr(line))
+                            lines = list(map(view.substr, view.lines(sublime.Region(0, len(view)))))
                             break
                 else:
-                    f = io.open(p, "r", encoding=encoding)
-                for num, line in enumerate(f, 1):
+                    with io.open(p, "r", encoding=encoding) as f:
+                        lines = f.readlines()
+
+                for num, line in enumerate(lines, 1):
                     for result in self.patterns.finditer(line):
                         for patt, note in result.groupdict().items():
                             if not note and note != "":
@@ -133,11 +137,9 @@ class Engine:
                                 "priority": priority,
                             }
             except (IOError, UnicodeDecodeError):
-                f = None
+                pass
             finally:
                 thread.increment()
-                if f is not None and type(f) is not list:
-                    f.close()
 
     def process(self) -> Generator[TYPING_RESULT, None, None]:
         return self.extract(self.files())
@@ -158,15 +160,16 @@ class Thread(threading.Thread):
         threading.Thread.__init__(self)
 
     def run(self) -> None:
-        self.start = timeit.default_timer()
+        self.t_start = timeit.default_timer()
         self.thread()
 
     def thread(self) -> None:
         results = list(self.engine.process())
         self.callback(results, self.finish(), self.i)
 
-    def finish(self) -> int:
-        return round(timeit.default_timer() - self.start, 2)
+    def finish(self) -> float:
+        self.t_end = timeit.default_timer()
+        return round(self.t_end - self.t_start, 2)
 
     def increment(self) -> None:
         with self.lock:
@@ -180,12 +183,13 @@ class TodoReviewCommand(sublime_plugin.TextCommand):
         filepaths = []
         self.args = args
         window = self.view.window()
-        paths = args.get("paths", None)
-        settings = Settings(self.view, args.get("settings", False))
+        paths = cast(List[str], args.get("paths", []))
+        settings = Settings(self.view, args.get("settings", {}))
         if args.get("current_file", False):
-            if self.view.file_name():
+            file_name = self.view.file_name() or ""
+            if file_name:
                 paths = []
-                filepaths = [self.view.file_name()]
+                filepaths = [file_name]
             else:
                 sublime.message_dialog("TodoReview: File must be saved first")
                 return
@@ -193,7 +197,7 @@ class TodoReviewCommand(sublime_plugin.TextCommand):
             if not paths and settings.get("include_paths", False):
                 paths = settings.get("include_paths", False)
             if args.get("open_files", False):
-                filepaths = [v.file_name() for v in window.views() if v.file_name()]
+                filepaths = [v.file_name() or "" for v in window.views() if v.file_name()]
             if not args.get("open_files_only", False):
                 if not paths:
                     paths = window.folders()
@@ -208,17 +212,20 @@ class TodoReviewCommand(sublime_plugin.TextCommand):
         thread.start()
 
     def render(self, results: List[TYPING_RESULT], time: int, count: int) -> None:
-        # fmt: off
         self.view.run_command(
             "todo_review_render",
             {"results": results, "time": time, "count": count, "args": self.args},
         )
-        # fmt: on
 
 
 class TodoReviewRender(sublime_plugin.TextCommand):
     def run(
-        self, edit: sublime.Edit, results: List[TYPING_RESULT], time: int, count: int, args: Dict[str, Any],
+        self,
+        edit: sublime.Edit,
+        results: List[TYPING_RESULT],
+        time: int,
+        count: int,
+        args: Dict[str, Any],
     ) -> None:
         self.args = args
         self.edit = edit
@@ -235,11 +242,14 @@ class TodoReviewRender(sublime_plugin.TextCommand):
 
     def sort(self) -> Iterator[TYPING_RESULT]:
         self.largest = 0
+
         for item in self.results:
             self.largest = max(len(self.draw_file(item)), self.largest)
+
         self.largest = min(self.largest, settings.get("render_maxspaces", 50)) + 6
         w = settings.get("patterns_weight", {})
         results = sorted(self.results, key=lambda m: (str(w.get(m["patt"].upper(), m["patt"])), m["priority"]))
+
         return itertools.groupby(results, key=lambda m: m["patt"])
 
     def get_view(self) -> sublime.View:
@@ -250,7 +260,7 @@ class TodoReviewRender(sublime_plugin.TextCommand):
                 return view
         view = self.window.new_file()
         view.set_name("TodoReview")
-        view.assign_syntax("scope:text.todo-list")
+        view.assign_syntax(TODO_SYNTAX_FILE)
         view.set_scratch(True)
         view.settings().set("todo_results", True)
         view.settings().set("line_padding_bottom", 2)
@@ -281,11 +291,11 @@ class TodoReviewRender(sublime_plugin.TextCommand):
             res = "\n## %t (%n)\n".replace("%t", patt.upper()).replace("%n", str(len(items)))
             self.rview.insert(self.edit, len(self.rview), res)
             for idx, item in enumerate(items, 1):
-                line = "%i. %f".replace("%i", str(idx)).replace("%f", self.draw_file(item))
-                res = (
-                    "%f%s%n\n".replace("%f", line)
-                    .replace("%s", " " * max((self.largest - len(line)), 1))
-                    .replace("%n", item["note"])
+                line = "{}. {}".format(idx, self.draw_file(item))
+                res = "{}{}{}\n".format(
+                    line,
+                    " " * max((self.largest - len(line)), 1),
+                    item["note"],
                 )
                 start = len(self.rview)
                 self.rview.insert(self.edit, start, res)

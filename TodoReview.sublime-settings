@@ -26,5 +26,4 @@
     "render_header_date": "%Y/%m/%d %H:%M:%S",
     "navigation_forward_skip": 10,
     "navigation_backward_skip": 10,
-    "color_scheme": "Packages/TodoReview/TodoReview.sublime-color-scheme",
 }
