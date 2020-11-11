@@ -9,12 +9,14 @@ import sublime_plugin
 import threading
 import timeit
 
-from typing import Any, Callable, Dict, Generator, Iterable, Iterator, List, cast
+from typing import Any, Callable, Dict, Generator, Iterable, Iterator, List, Optional, Tuple
 
-TYPING_RESULT = Dict[str, Any]
+T_RESULT = Dict[str, Any]
 
 PACKAGE_NAME = __package__.partition(".")[0]
 TODO_SYNTAX_FILE = "Packages/{}/TodoReview.sublime-syntax".format(PACKAGE_NAME)
+
+settings = None  # type: Optional[sublime.Settings]
 
 
 def fn_to_regex(fn: str) -> str:
@@ -53,7 +55,7 @@ class Settings:
     def __init__(self, view: sublime.View, args: Dict[str, Any]):
         self.user = sublime.load_settings("TodoReview.sublime-settings")
         if not args:
-            self.proj = cast(Dict[str, Any], view.settings().get("todoreview", {}))
+            self.proj = view.settings().get("todoreview", {})  # type: Dict[str, Any]
         else:
             self.proj = args
 
@@ -105,7 +107,7 @@ class Engine:
             seen_paths.add(filepath)
             yield filepath
 
-    def extract(self, files: Iterable[str]) -> Generator[TYPING_RESULT, None, None]:
+    def extract(self, files: Iterable[str]) -> Generator[T_RESULT, None, None]:
         encoding = settings.get("encoding", "utf-8")
         for p in files:
             try:
@@ -141,7 +143,7 @@ class Engine:
             finally:
                 thread.increment()
 
-    def process(self) -> Generator[TYPING_RESULT, None, None]:
+    def process(self) -> Generator[T_RESULT, None, None]:
         return self.extract(self.files())
 
     def resolve(self, directory: str) -> str:
@@ -183,7 +185,7 @@ class TodoReviewCommand(sublime_plugin.TextCommand):
         filepaths = []
         self.args = args
         window = self.view.window()
-        paths = cast(List[str], args.get("paths", []))
+        paths = args.get("paths", [])  # type: List[str]
         settings = Settings(self.view, args.get("settings", {}))
         if args.get("current_file", False):
             file_name = self.view.file_name() or ""
@@ -211,18 +213,18 @@ class TodoReviewCommand(sublime_plugin.TextCommand):
         thread = Thread(engine, self.render)
         thread.start()
 
-    def render(self, results: List[TYPING_RESULT], time: int, count: int) -> None:
+    def render(self, results: List[T_RESULT], time: int, count: int) -> None:
         self.view.run_command(
             "todo_review_render",
             {"results": results, "time": time, "count": count, "args": self.args},
         )
 
 
-class TodoReviewRender(sublime_plugin.TextCommand):
+class TodoReviewRenderCommand(sublime_plugin.TextCommand):
     def run(
         self,
         edit: sublime.Edit,
-        results: List[TYPING_RESULT],
+        results: List[T_RESULT],
         time: int,
         count: int,
         args: Dict[str, Any],
@@ -240,7 +242,7 @@ class TodoReviewRender(sublime_plugin.TextCommand):
         self.args["settings"] = settings.proj
         self.rview.settings().set("review_args", self.args)
 
-    def sort(self) -> Iterator[TYPING_RESULT]:
+    def sort(self) -> Iterator[Tuple[str, Iterator[T_RESULT]]]:
         self.largest = 0
 
         for item in self.results:
@@ -248,7 +250,7 @@ class TodoReviewRender(sublime_plugin.TextCommand):
 
         self.largest = min(self.largest, settings.get("render_maxspaces", 50)) + 6
         w = settings.get("patterns_weight", {})
-        results = sorted(self.results, key=lambda m: (str(w.get(m["patt"].upper(), m["patt"])), m["priority"]))
+        results = sorted(self.results, key=lambda m: (str(w.get(m["patt"].upper(), "No title")), m["priority"]))
 
         return itertools.groupby(results, key=lambda m: m["patt"])
 
@@ -306,7 +308,7 @@ class TodoReviewRender(sublime_plugin.TextCommand):
         d = dict(("{0},{1}".format(k.a, k.b), v) for k, v in zip(data[0], data[1]))
         self.rview.settings().set("review_results", d)
 
-    def draw_file(self, item: TYPING_RESULT) -> str:
+    def draw_file(self, item: T_RESULT) -> str:
         if settings.get("render_include_folder", False):
             depth = settings.get("render_folder_depth", 1)
             if depth == "auto":
@@ -324,7 +326,7 @@ class TodoReviewRender(sublime_plugin.TextCommand):
         return "%f:%l".replace("%f", f).replace("%l", str(item["line"]))
 
 
-class TodoReviewResults(sublime_plugin.TextCommand):
+class TodoReviewResultsCommand(sublime_plugin.TextCommand):
     def run(self, edit: sublime.Edit, **args: Dict[str, Any]) -> None:
         self.settings = self.view.settings()
 
@@ -336,20 +338,20 @@ class TodoReviewResults(sublime_plugin.TextCommand):
             index = int(self.settings.get("selected_result", -1))
             result = self.view.get_regions("results")[index]
             coords = "{0},{1}".format(result.a, result.b)
-            i = self.settings.get("review_results")[coords]
+            i = self.settings.get("review_results")[coords]  # type: T_RESULT
             p = "%f:%l".replace("%f", i["file"]).replace("%l", str(i["line"]))
             view = window.open_file(p, sublime.ENCODED_POSITION)
             window.focus_view(view)
             return
 
         if args.get("refresh"):
-            args = self.settings.get("review_args")
+            args = self.settings.get("review_args")  # type: Dict[str, Any]
             self.view.run_command("todo_review", args)
             self.settings.erase("selected_result")
             return
 
         if args.get("direction"):
-            d = args.get("direction")
+            d = args.get("direction")  # type: str
             results = self.view.get_regions("results")
             if not results:
                 return
@@ -359,7 +361,7 @@ class TodoReviewResults(sublime_plugin.TextCommand):
                 "up": -1,
                 "down_skip": settings.get("navigation_forward_skip", 10),
                 "up_skip": settings.get("navigation_backward_skip", 10) * -1,
-            }
+            }  # type: Dict[str, int]
             sel = int(self.settings.get("selected_result", start_arr[d]))
             sel = sel + dir_arr[d]
             if sel == -1:
