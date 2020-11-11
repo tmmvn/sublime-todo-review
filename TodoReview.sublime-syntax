@@ -9,27 +9,32 @@ scope: text.todo-list
 contexts:
   main:
     # header
-    - match: ^(//)(.*)$
+    - match: ^(//)(.*)\n?
       captures:
         0: comment.line.double-slash
         1: punctuation.definition.comment
     # title
-    - match: ^(##)(.*)$
+    - match: ^(##)(.*)\n?
       scope: punctuation.definition.title
       captures:
-        0: meta.title
+        0: markup.heading.2
         1: punctuation.definition.title
-    # item num
+    # ItemNum. FilePath:LineNum TodoContent
     - match: ^(\d+)(\.)(?=\s)
       captures:
         0: meta.item-number
         1: constant.numeric.item-number
         2: punctuation.separator.item
-    # line num
-    - match: '(:)(\d+)(?=\s)'
-      captures:
-        1: punctuation.separator.line-number
-        2: constant.numeric.line-number
+      push:
+        - match: '[ \t]+'
+          set:
+            - match: '([^:]+)(:)(\d+)[ \t]+(.*)'
+              captures:
+                1: string.unquoted.path
+                2: punctuation.separator.line-number
+                3: constant.numeric.line-number
+                # 4: string.unquoted.note
+              pop: true
     # priority
     - match: (\()(\d+)(\))
       captures:
