@@ -1,3 +1,7 @@
+## 6.0.0 - 2021/07/23
+
+- refactor: drop ST 3
+
 ## 5.1.1 - 2020/09/21
 
 - fix: replace set_syntax_file() with assign_syntax()

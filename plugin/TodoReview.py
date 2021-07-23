@@ -1,3 +1,4 @@
+from typing import Any, Callable, Dict, Generator, Iterable, Iterator, List, Optional, Tuple
 import datetime
 import fnmatch
 import io
@@ -9,14 +10,12 @@ import sublime_plugin
 import threading
 import timeit
 
-from typing import Any, Callable, Dict, Generator, Iterable, Iterator, List, Optional, Tuple
-
 T_RESULT = Dict[str, Any]
 
 PACKAGE_NAME = __package__.partition(".")[0]
-TODO_SYNTAX_FILE = "Packages/{}/TodoReview.sublime-syntax".format(PACKAGE_NAME)
+TODO_SYNTAX_FILE = f"Packages/{PACKAGE_NAME}/TodoReview.sublime-syntax"
 
-settings = None  # type: Optional[sublime.Settings]
+settings: Optional[sublime.Settings] = None
 
 
 def fn_to_regex(fn: str) -> str:
