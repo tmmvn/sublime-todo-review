@@ -1,54 +1,62 @@
-## 6.0.0 - 2021/07/23
+# TodoReview Changelog
+
+## 6.0.1
+
+- fix: make mypy happy
+- fix: modules should be reloaded when update plugin
+- refactor: simplify `boot.py`
+
+## 6.0.0
 
 - refactor: drop ST 3
 
-## 5.1.1 - 2020/09/21
+## 5.1.1
 
 - fix: replace set_syntax_file() with assign_syntax()
 
-## 5.1.0 - 2020/07/11
+## 5.1.0
 
 - feat: improved color highlighting
 - chore: update todo patterns
 
-## 5.0.0 - 2020/07/10
+## 5.0.0
 
 - feat: popup dialog if file not saved
 - fix: `fn_to_regex()` doesn't match all dir separators
 - feat: drop ST 3 and use Python 3.8
 
-## 4.0.0 - 2020/07/09
+## 4.0.0
 
 - forked by Jack Cherng <jfcherng@gmail.com> (@jfcherng)
 - pref: increase performance on large projects
 - feat: drop ST 2 (Python 2)
 - chore: remove .no-sublime-package
 
-## 3.0.13 - 09/30/2018
+## 3.0.13
 
 - Add: "auto" option for `render_folder_depth` (#166, thanks @dbeckwith)
 
-## 3.0.12 - 03/18/2018
+## 3.0.12
 
 - Upd: Default priority is now 50 (#158, thanks @locomo)
 
-## 3.0.11 - 02/28/2018
+## 3.0.11
 
 - AddL resolve_symlinks option (#107, #155, thanks @drevicko)
 
-## 3.0.10 - 01/17/2017
+## 3.0.10
 
 - Add current_file argument (#146, thanks @marcus-at-localhorst)
 
-## 3.0.9 - 11/09/16
+## 3.0.9
 
 - Add: Ability to follow symlinks (Thanks @malexer)
 
-## 3.0.8 - 04/21/16
+## 3.0.8
 
 - Fix: Datestr not being defined
 
-## 3.0.7 - 10/30/15
+## 3.0.7
 
 - Doc: Fixed a typo (Thanks @nunoh)
 - Fix: Removed a double import of sublime (Thanks @mmattes)
@@ -56,37 +64,37 @@
 - Fix: Prevent ST3 Glitch Crash (#131, #133) (Thanks @nsfmc)
 - Refactor: Cached encoding setting for a speed improvement
 
-## 3.0.6 - 02/19/15
+## 3.0.6
 
 - Add: Open Files Only Command Pallet Option (#96) (Thanks @zephster)
 - Doc: Fixed typo (#94) (Thanks @davidnunez)
 
-## 3.0.5 - 10/25/14
+## 3.0.5
 
 - Doc: `encoding` setting
 - Add: UTF-8 File Fix (#79, #81, #82, #83)
 
-## 3.0.4 - 10/09/14
+## 3.0.4
 
 - Doc: Folder Depth Support
 - Add: Folder Depth Support (Thanks @Rylon)
 
-## 3.0.3 - 10/05/14
+## 3.0.3
 
 - Doc: Updated ST3 references
 - Add: Sublime Text 2 Support
 
-## 3.0.2 - 10/03/14
+## 3.0.2
 
 - Doc: Settings as an argument
 - Add: Sync project settings between refreshes (#71)
 - Fix: `include_paths` error (#73) (Thanks @violon3d)
 
-## 3.0.1 - 09/30/14
+## 3.0.1
 
 - Fix: Rebuild for Package Control
 
-## 3.0.0 - 09/30/14
+## 3.0.0
 
 - Add: Syntax highlighting for report header
 - Add: Search Timer
@@ -108,12 +116,12 @@
 - Upd: Refactored
 - Upd: Combined keymaps
 
-## 2.1.6 - 05/04/14
+## 2.1.6
 
 - Fix: Documentation on clicking
 - Fix: Double click in incorrect context (#49)
 
-## 2.1.5 - 05/02/14
+## 2.1.5
 
 - Upd: Changed proj settings to user settings (#45)
 - Upd: Better default settings (#48)
@@ -123,11 +131,11 @@
 - Add: Mouse navigation (#47)
 - Add: Navigation Skipping. Thanks @phoopee3 (#46)
 
-## 2.1.4 - 04/17/14
+## 2.1.4
 
 - Fix: Error due to project settings (#41)
 
-## 2.1.3 - 04/17/14
+## 2.1.3
 
 - Add: Documentation for regex101 (#40)
 - Add: Documentation for `include_paths` and project settings
@@ -137,7 +145,7 @@
 - Del: Project import readme
 - Upd: Fixed formatting
 
-## 2.1.2 - 04/02/14
+## 2.1.2
 
 - Add: Ability to import project exclusions for files and folders (#33, #25)
 - Add: Setting to control project importing
@@ -145,7 +153,7 @@
 - Upd: Added clarification on other actions readme
 - Upd: Fixed readme markdown headers
 
-## 2.1.1 - 04/01/14
+## 2.1.1
 
 - Upd: Default settings to reflect new glob type of `exclude_folders`
 - Add: Documentation surrounding `open_files_only` and `exclude_folders`
@@ -159,7 +167,7 @@
 - Upd: Readme
 - Upd: Changelog Formatting
 
-## 2.1.0 - 02/24/14
+## 2.1.0
 
 - Add: Sort by Priority
 - Add: Ability to search open files (#19)
@@ -170,18 +178,18 @@
 - Upd: Readme
 - Upd: Cleaned some code and converted to tabs
 
-## 2.0.2 - 02/16/14
+## 2.0.2
 
 - Add: Sublime Menu for Preferences (#13)
 - Add: Sidebar Support (#3)
 - Fix: Failure to load language file (#10)
 
-## 2.0.1 - 02/15/14
+## 2.0.1
 
 - Add: Messages for SublimeTODO Migration
 - Fix: Syntax Load Problem
 
-## 0.1.0 - 02/06/14
+## 0.1.0
 
 - Add: Color Scheme Support
 - Add: Priority Support
