@@ -1,3 +1,6 @@
+from __future__ import annotations
+
+# __future__ must be the first import
 from typing import Any, Callable, Dict, Generator, Iterable, Iterator, List, Optional, Tuple
 import datetime
 import fnmatch
@@ -15,7 +18,8 @@ T_RESULT = Dict[str, Any]
 PACKAGE_NAME = __package__.partition(".")[0]
 TODO_SYNTAX_FILE = f"Packages/{PACKAGE_NAME}/TodoReview.sublime-syntax"
 
-settings: Optional[sublime.Settings] = None
+settings: Optional[Settings] = None
+thread: Optional[Thread] = None
 
 
 def fn_to_regex(fn: str) -> str:
@@ -64,6 +68,8 @@ class Settings:
 
 class Engine:
     def __init__(self, dirpaths: Iterable[str], filepaths: Iterable[str], view: sublime.View):
+        assert settings
+
         self.view = view
         self.dirpaths = dirpaths
         self.filepaths = set(filepaths)
@@ -83,7 +89,7 @@ class Engine:
         self.priority = re.compile(r"\(([0-9]{1,2})\)")
         self.exclude_files = re.compile(match_files, re_case)
         self.exclude_folders = re.compile(match_folders, re_case)
-        self.open = self.view.window().views()
+        self.open = w.views() if (w := self.view.window()) else []
         self.open_files = [v.file_name() for v in self.open if v.file_name()]
 
     def files(self) -> Generator[str, None, None]:
@@ -107,6 +113,8 @@ class Engine:
             yield filepath
 
     def extract(self, files: Iterable[str]) -> Generator[T_RESULT, None, None]:
+        assert settings and thread
+
         encoding = settings.get("encoding", "utf-8")
         for p in files:
             try:
@@ -146,6 +154,8 @@ class Engine:
         return self.extract(self.files())
 
     def resolve(self, directory: str) -> str:
+        assert settings
+
         if settings.get("resolve_symlinks", True):
             return os.path.realpath(os.path.expanduser(os.path.abspath(directory)))
         else:
@@ -179,12 +189,15 @@ class Thread(threading.Thread):
 
 
 class TodoReviewCommand(sublime_plugin.TextCommand):
-    def run(self, edit: sublime.Edit, **args: Dict[str, Any]) -> None:
+    def run(self, edit: sublime.Edit, **args: Any) -> None:
         global settings, thread
+
+        if not (window := self.view.window()):
+            return
+
         filepaths = []
         self.args = args
-        window = self.view.window()
-        paths = args.get("paths", [])  # type: List[str]
+        paths: List[str] = args.get("paths", [])
         settings = Settings(self.view, args.get("settings", {}))
         if args.get("current_file", False):
             file_name = self.view.file_name() or ""
@@ -228,6 +241,8 @@ class TodoReviewRenderCommand(sublime_plugin.TextCommand):
         count: int,
         args: Dict[str, Any],
     ) -> None:
+        assert settings
+
         self.args = args
         self.edit = edit
         self.time = time
@@ -242,6 +257,8 @@ class TodoReviewRenderCommand(sublime_plugin.TextCommand):
         self.rview.settings().set("review_args", self.args)
 
     def sort(self) -> Iterator[Tuple[str, Iterator[T_RESULT]]]:
+        assert settings
+
         self.largest = 0
 
         for item in self.results:
@@ -271,6 +288,8 @@ class TodoReviewRenderCommand(sublime_plugin.TextCommand):
         return view
 
     def draw_header(self) -> None:
+        assert settings
+
         forms = settings.get("render_header_format", "%d - %c files in %t secs")
         datestr = settings.get("render_header_date", "%A %m/%d/%y at %I:%M%p")
         if not forms:
@@ -286,9 +305,9 @@ class TodoReviewRenderCommand(sublime_plugin.TextCommand):
         self.rview.insert(self.edit, len(self.rview), res)
 
     def draw_results(self) -> None:
-        data = [x[:] for x in [[]] * 2]
-        for patt, items in self.sorted:
-            items = list(items)
+        data: Tuple[List[sublime.Region], List[T_RESULT]] = ([], [])
+        for patt, _items in self.sorted:
+            items = list(_items)
             res = "\n## %t (%n)\n".replace("%t", patt.upper()).replace("%n", str(len(items)))
             self.rview.insert(self.edit, len(self.rview), res)
             for idx, item in enumerate(items, 1):
@@ -308,6 +327,8 @@ class TodoReviewRenderCommand(sublime_plugin.TextCommand):
         self.rview.settings().set("review_results", d)
 
     def draw_file(self, item: T_RESULT) -> str:
+        assert settings
+
         if settings.get("render_include_folder", False):
             depth = settings.get("render_folder_depth", 1)
             if depth == "auto":
@@ -326,31 +347,32 @@ class TodoReviewRenderCommand(sublime_plugin.TextCommand):
 
 
 class TodoReviewResultsCommand(sublime_plugin.TextCommand):
-    def run(self, edit: sublime.Edit, **args: Dict[str, Any]) -> None:
+    def run(self, edit: sublime.Edit, **args: Any) -> None:
+        assert settings
+
         self.settings = self.view.settings()
 
         if not self.settings.get("review_results"):
             return
 
-        if args.get("open"):
-            window = self.view.window()
+        if args.get("open") and (window := self.view.window()):
             index = int(self.settings.get("selected_result", -1))
             result = self.view.get_regions("results")[index]
             coords = "{0},{1}".format(result.a, result.b)
-            i = self.settings.get("review_results")[coords]  # type: T_RESULT
+            i: T_RESULT = self.settings.get("review_results")[coords]
             p = "%f:%l".replace("%f", i["file"]).replace("%l", str(i["line"]))
             view = window.open_file(p, sublime.ENCODED_POSITION)
             window.focus_view(view)
             return
 
         if args.get("refresh"):
-            args = self.settings.get("review_args")  # type: Dict[str, Any]
-            self.view.run_command("todo_review", args)
+            review_args: Dict[str, Any] = self.settings.get("review_args")
+            self.view.run_command("todo_review", review_args)
             self.settings.erase("selected_result")
             return
 
         if args.get("direction"):
-            d = args.get("direction")  # type: str
+            direction: str = args.get("direction", "")
             results = self.view.get_regions("results")
             if not results:
                 return
@@ -361,8 +383,8 @@ class TodoReviewResultsCommand(sublime_plugin.TextCommand):
                 "down_skip": settings.get("navigation_forward_skip", 10),
                 "up_skip": settings.get("navigation_backward_skip", 10) * -1,
             }  # type: Dict[str, int]
-            sel = int(self.settings.get("selected_result", start_arr[d]))
-            sel = sel + dir_arr[d]
+            sel = int(self.settings.get("selected_result", start_arr[direction]))
+            sel = sel + dir_arr[direction]
             if sel == -1:
                 target = results[len(results) - 1]
                 sel = len(results) - 1
