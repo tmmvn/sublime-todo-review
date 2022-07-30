@@ -1,5 +1,13 @@
 # TodoReview Changelog
 
+## 6.0.2
+
+- fix: set `"is_widget"` to `True` for todo view
+- fix: `keypad_enter` also opens todo item
+- chore: re-order command list and keybindings
+- chore: add option to review current file to Command Palette (#2)
+- chore: add `n` and `p` keys to review buffer navigation (#3)
+
 ## 6.0.1
 
 - fix: make mypy happy
