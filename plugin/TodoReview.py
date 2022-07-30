@@ -286,6 +286,7 @@ class TodoReviewRenderCommand(sublime_plugin.TextCommand):
         view.settings().set("line_padding_top", 2)
         view.settings().set("word_wrap", False)
         view.settings().set("command_mode", True)
+        view.settings().set("is_widget", True)
         return view
 
     def draw_header(self) -> None:
