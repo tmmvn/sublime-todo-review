@@ -1,7 +1,5 @@
 # import all listeners and commands
-from .TodoReview import TodoReviewCommand
-from .TodoReview import TodoReviewRenderCommand
-from .TodoReview import TodoReviewResultsCommand
+from .TodoReview import TodoReviewCommand, TodoReviewRenderCommand, TodoReviewResultsCommand
 
 __all__ = (
     # ST: core

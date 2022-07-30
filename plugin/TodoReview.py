@@ -1,19 +1,20 @@
 from __future__ import annotations
 
-# __future__ must be the first import
-from typing import Any, Callable, Dict, Generator, Iterable, Iterator, List, Optional, Tuple
 import datetime
 import fnmatch
 import io
 import itertools
 import os
 import re
-import sublime
-import sublime_plugin
 import threading
 import timeit
 
-T_RESULT = Dict[str, Any]
+from typing import Any, Callable, Dict, Generator, Iterable, Iterator, List, Optional, Tuple
+
+import sublime
+import sublime_plugin
+
+RESULT = Dict[str, Any]
 
 PACKAGE_NAME = __package__.partition(".")[0]
 TODO_SYNTAX_FILE = f"Packages/{PACKAGE_NAME}/TodoReview.sublime-syntax"
@@ -112,7 +113,7 @@ class Engine:
             seen_paths.add(filepath)
             yield filepath
 
-    def extract(self, files: Iterable[str]) -> Generator[T_RESULT, None, None]:
+    def extract(self, files: Iterable[str]) -> Generator[RESULT, None, None]:
         assert settings and thread
 
         encoding = settings.get("encoding", "utf-8")
@@ -150,7 +151,7 @@ class Engine:
             finally:
                 thread.increment()
 
-    def process(self) -> Generator[T_RESULT, None, None]:
+    def process(self) -> Generator[RESULT, None, None]:
         return self.extract(self.files())
 
     def resolve(self, directory: str) -> str:
@@ -225,7 +226,7 @@ class TodoReviewCommand(sublime_plugin.TextCommand):
         thread = Thread(engine, self.render)
         thread.start()
 
-    def render(self, results: List[T_RESULT], time: int, count: int) -> None:
+    def render(self, results: List[RESULT], time: int, count: int) -> None:
         self.view.run_command(
             "todo_review_render",
             {"results": results, "time": time, "count": count, "args": self.args},
@@ -236,7 +237,7 @@ class TodoReviewRenderCommand(sublime_plugin.TextCommand):
     def run(
         self,
         edit: sublime.Edit,
-        results: List[T_RESULT],
+        results: List[RESULT],
         time: int,
         count: int,
         args: Dict[str, Any],
@@ -256,7 +257,7 @@ class TodoReviewRenderCommand(sublime_plugin.TextCommand):
         self.args["settings"] = settings.proj
         self.rview.settings().set("review_args", self.args)
 
-    def sort(self) -> Iterator[Tuple[str, Iterator[T_RESULT]]]:
+    def sort(self) -> Iterator[Tuple[str, Iterator[RESULT]]]:
         assert settings
 
         self.largest = 0
@@ -305,7 +306,7 @@ class TodoReviewRenderCommand(sublime_plugin.TextCommand):
         self.rview.insert(self.edit, len(self.rview), res)
 
     def draw_results(self) -> None:
-        data: Tuple[List[sublime.Region], List[T_RESULT]] = ([], [])
+        data: Tuple[List[sublime.Region], List[RESULT]] = ([], [])
         for patt, _items in self.sorted:
             items = list(_items)
             res = "\n## %t (%n)\n".replace("%t", patt.upper()).replace("%n", str(len(items)))
@@ -326,7 +327,7 @@ class TodoReviewRenderCommand(sublime_plugin.TextCommand):
         d = dict(("{0},{1}".format(k.a, k.b), v) for k, v in zip(data[0], data[1]))
         self.rview.settings().set("review_results", d)
 
-    def draw_file(self, item: T_RESULT) -> str:
+    def draw_file(self, item: RESULT) -> str:
         assert settings
 
         if settings.get("render_include_folder", False):
@@ -359,7 +360,7 @@ class TodoReviewResultsCommand(sublime_plugin.TextCommand):
             index = int(self.settings.get("selected_result", -1))
             result = self.view.get_regions("results")[index]
             coords = "{0},{1}".format(result.a, result.b)
-            i: T_RESULT = self.settings.get("review_results")[coords]
+            i: RESULT = self.settings.get("review_results")[coords]
             p = "%f:%l".replace("%f", i["file"]).replace("%l", str(i["line"]))
             view = window.open_file(p, sublime.ENCODED_POSITION)
             window.focus_view(view)
