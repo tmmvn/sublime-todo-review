@@ -11,6 +11,12 @@
         "context": [{ "key": "setting.command_mode", "operand": true }, { "key": "setting.todo_results" }],
         "args": { "open": true }
     },
+    {
+        "keys": ["keypad_enter"],
+        "command": "todo_review_results",
+        "context": [{ "key": "setting.command_mode", "operand": true }, { "key": "setting.todo_results" }],
+        "args": { "open": true }
+    },
 
     //////////////
     // movement //
