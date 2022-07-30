@@ -1,7 +1,8 @@
 [
     {
-        "caption": "TodoReview: Project Files",
-        "command": "todo_review"
+        "caption": "TodoReview: Current File",
+        "command": "todo_review",
+        "args": { "current_file": true }
     },
     {
         "caption": "TodoReview: Open Files",
@@ -9,13 +10,12 @@
         "args": { "open_files": true, "open_files_only": true }
     },
     {
+        "caption": "TodoReview: Project Files",
+        "command": "todo_review"
+    },
+    {
         "caption": "TodoReview: Project and Open Files",
         "command": "todo_review",
         "args": { "open_files": true }
-    },
-    {
-        "caption": "TodoReview: Current File",
-        "command": "todo_review",
-        "args": { "current_file": true }
     }
 ]

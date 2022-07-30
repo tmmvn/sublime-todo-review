@@ -5,9 +5,7 @@
     {
         "caption": "TodoReview",
         "command": "todo_review",
-        "args": {
-            "paths": []
-        }
+        "args": { "paths": [] }
     },
     {
         "caption": "-"
