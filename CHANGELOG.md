@@ -1,5 +1,9 @@
 # TodoReview Changelog
 
+## 6.0.3
+
+- fix: write to todoreview buffer using its own edit token (#5)
+
 ## 6.0.2
 
 - fix: set `"is_widget"` to `True` for todo view
