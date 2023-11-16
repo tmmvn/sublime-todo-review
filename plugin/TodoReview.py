@@ -8,7 +8,6 @@ import os
 import re
 import threading
 import timeit
-
 from typing import Any, Callable, Dict, Generator, Iterable, Iterator, List, Optional, Tuple
 
 import sublime
