@@ -46,6 +46,4 @@ jobs:
 
       - name: Do linting
         run: |
-          mypy -p plugin
-          flake8 plugin
-          black --check plugin
+          make ci-check
