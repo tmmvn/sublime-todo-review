@@ -2,13 +2,12 @@ from __future__ import annotations
 
 import datetime
 import fnmatch
-import io
 import itertools
 import os
 import re
 import threading
 import timeit
-from typing import Any, Callable, Dict, Generator, Iterable, Iterator, List, Optional, Tuple
+from typing import Any, Callable, Dict, Generator, Iterable, Iterator
 
 import sublime
 import sublime_plugin
@@ -18,8 +17,8 @@ RESULT = Dict[str, Any]
 PACKAGE_NAME = __package__.partition(".")[0]
 TODO_SYNTAX_FILE = f"Packages/{PACKAGE_NAME}/TodoReview.sublime-syntax"
 
-settings: Optional[Settings] = None
-thread: Optional[Thread] = None
+settings: Settings | None = None
+thread: Thread | None = None
 
 
 def fn_to_regex(fn: str) -> str:
@@ -55,7 +54,7 @@ def merge_regexes(regexes: Iterable[str]) -> str:
 
 
 class Settings:
-    def __init__(self, view: sublime.View, args: Dict[str, Any]):
+    def __init__(self, view: sublime.View, args: dict[str, Any]):
         self.user = sublime.load_settings("TodoReview.sublime-settings")
         if not args:
             self.proj = view.settings().get("todoreview", {})  # type: Dict[str, Any]
@@ -125,7 +124,7 @@ class Engine:
                             lines = list(map(view.substr, view.lines(sublime.Region(0, len(view)))))
                             break
                 else:
-                    with io.open(p, "r", encoding=encoding) as f:
+                    with open(p, encoding=encoding) as f:
                         lines = f.readlines()
 
                 for num, line in enumerate(lines, 1):
@@ -145,7 +144,7 @@ class Engine:
                                 "line": num,
                                 "priority": priority,
                             }
-            except (IOError, UnicodeDecodeError):
+            except (OSError, UnicodeDecodeError):
                 pass
             finally:
                 thread.increment()
@@ -185,7 +184,7 @@ class Thread(threading.Thread):
     def increment(self) -> None:
         with self.lock:
             self.i += 1
-            sublime.status_message("TodoReview: {0} files scanned".format(self.i))
+            sublime.status_message(f"TodoReview: {self.i} files scanned")
 
 
 class TodoReviewCommand(sublime_plugin.TextCommand):
@@ -197,7 +196,7 @@ class TodoReviewCommand(sublime_plugin.TextCommand):
 
         filepaths = []
         self.args = args
-        paths: List[str] = args.get("paths", [])
+        paths: list[str] = args.get("paths", [])
         settings = Settings(self.view, args.get("settings", {}))
         if args.get("current_file", False):
             file_name = self.view.file_name() or ""
@@ -225,7 +224,7 @@ class TodoReviewCommand(sublime_plugin.TextCommand):
         thread = Thread(engine, self.render)
         thread.start()
 
-    def render(self, results: List[RESULT], time: int, count: int) -> None:
+    def render(self, results: list[RESULT], time: int, count: int) -> None:
         view = self.get_or_create_view()
         view.run_command(
             "todo_review_render",
@@ -254,10 +253,10 @@ class TodoReviewRenderCommand(sublime_plugin.TextCommand):
     def run(
         self,
         edit: sublime.Edit,
-        results: List[RESULT],
+        results: list[RESULT],
         time: int,
         count: int,
-        args: Dict[str, Any],
+        args: dict[str, Any],
     ) -> None:
         assert settings
 
@@ -275,7 +274,7 @@ class TodoReviewRenderCommand(sublime_plugin.TextCommand):
         self.args["settings"] = settings.proj
         self.view.settings().set("review_args", self.args)
 
-    def sort(self) -> Iterator[Tuple[str, Iterator[RESULT]]]:
+    def sort(self) -> Iterator[tuple[str, Iterator[RESULT]]]:
         assert settings
 
         self.largest = 0
@@ -307,13 +306,13 @@ class TodoReviewRenderCommand(sublime_plugin.TextCommand):
         self.view.insert(self.edit, len(self.view), res)
 
     def draw_results(self) -> None:
-        data: Tuple[List[sublime.Region], List[RESULT]] = ([], [])
+        data: tuple[list[sublime.Region], list[RESULT]] = ([], [])
         for patt, _items in self.sorted:
             items = list(_items)
             res = "\n## %t (%n)\n".replace("%t", patt.upper()).replace("%n", str(len(items)))
             self.view.insert(self.edit, len(self.view), res)
             for idx, item in enumerate(items, 1):
-                line = "{}. {}".format(idx, self.draw_file(item))
+                line = f"{idx}. {self.draw_file(item)}"
                 res = "{}{}{}\n".format(
                     line,
                     " " * max((self.largest - len(line)), 1),
@@ -325,7 +324,7 @@ class TodoReviewRenderCommand(sublime_plugin.TextCommand):
                 data[0].append(region)
                 data[1].append(item)
         self.view.add_regions("results", data[0], "")
-        d = dict(("{0},{1}".format(k.a, k.b), v) for k, v in zip(data[0], data[1]))
+        d = dict((f"{k.a},{k.b}", v) for k, v in zip(data[0], data[1]))
         self.view.settings().set("review_results", d)
 
     def draw_file(self, item: RESULT) -> str:
@@ -360,7 +359,7 @@ class TodoReviewResultsCommand(sublime_plugin.TextCommand):
         if args.get("open") and (window := self.view.window()):
             index = int(self.settings.get("selected_result", -1))
             result = self.view.get_regions("results")[index]
-            coords = "{0},{1}".format(result.a, result.b)
+            coords = f"{result.a},{result.b}"
             i: RESULT = self.settings.get("review_results")[coords]
             p = "%f:%l".replace("%f", i["file"]).replace("%l", str(i["line"]))
             view = window.open_file(p, sublime.ENCODED_POSITION)
@@ -368,7 +367,7 @@ class TodoReviewResultsCommand(sublime_plugin.TextCommand):
             return
 
         if args.get("refresh"):
-            review_args: Dict[str, Any] = self.settings.get("review_args")
+            review_args: dict[str, Any] = self.settings.get("review_args")
             self.view.run_command("todo_review", review_args)
             self.settings.erase("selected_result")
             return
