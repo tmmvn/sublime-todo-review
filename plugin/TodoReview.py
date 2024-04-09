@@ -7,12 +7,14 @@ import os
 import re
 import threading
 import timeit
-from typing import Any, Callable, Dict, Generator, Iterable, Iterator
+from typing import Any, Callable, Dict, Generator, Iterable, Iterator, TypeVar
 
 import sublime
 import sublime_plugin
 
 assert __package__
+
+_T = TypeVar("_T", bound=Callable[..., Any])
 
 RESULT = Dict[str, Any]
 
@@ -51,6 +53,18 @@ def merge_regexes(regexes: Iterable[str]) -> str:
     merged = "(?:" + ")|(?:".join(regexes) + ")"
 
     return "" if merged == "(?:)" else merged
+
+
+def writable_view(func: _T) -> _T:
+    """A decorator for `sublime_plugin.TextCommand` to make the view writable during command execution."""
+
+    def wrapper(self: sublime_plugin.TextCommand, *args, **kwargs) -> Any:
+        self.view.set_read_only(False)
+        result = func(self, *args, **kwargs)
+        self.view.set_read_only(True)
+        return result
+
+    return wrapper  # type: ignore
 
 
 class Settings:
@@ -240,6 +254,7 @@ class TodoReviewCommand(sublime_plugin.TextCommand):
         view.set_name("TodoReview")
         view.assign_syntax(TODO_SYNTAX_FILE)
         view.set_scratch(True)
+        view.set_read_only(True)
         view.settings().update({
             "todo_results": True,
             "line_padding_bottom": 2,
@@ -252,6 +267,7 @@ class TodoReviewCommand(sublime_plugin.TextCommand):
 
 
 class TodoReviewRenderCommand(sublime_plugin.TextCommand):
+    @writable_view
     def run(
         self,
         edit: sublime.Edit,
@@ -325,7 +341,7 @@ class TodoReviewRenderCommand(sublime_plugin.TextCommand):
                 region = sublime.Region(start, len(self.view))
                 data[0].append(region)
                 data[1].append(item)
-        self.view.add_regions("results", data[0], "")
+        self.view.add_regions("results", data[0], "", flags=sublime.PERSISTENT)
         d = dict((f"{k.a},{k.b}", v) for k, v in zip(data[0], data[1]))
         self.view.settings().set("review_results", d)
 
@@ -400,6 +416,12 @@ class TodoReviewResultsCommand(sublime_plugin.TextCommand):
             target = results[sel]
             self.settings.set("selected_result", sel)
             region = target.cover(target)
-            self.view.add_regions("selection", [region], "todo-list.selected", "circle", sublime.DRAW_NO_FILL)
+            self.view.add_regions(
+                "selection",
+                [region],
+                "todo-list.selected",
+                "circle",
+                flags=sublime.DRAW_NO_FILL | sublime.PERSISTENT,
+            )
             self.view.show(sublime.Region(region.a, region.a + 5))
             return
