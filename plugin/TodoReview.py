@@ -12,6 +12,8 @@ from typing import Any, Callable, Dict, Generator, Iterable, Iterator
 import sublime
 import sublime_plugin
 
+assert __package__
+
 RESULT = Dict[str, Any]
 
 PACKAGE_NAME = __package__.partition(".")[0]
@@ -23,13 +25,12 @@ thread: Thread | None = None
 
 def fn_to_regex(fn: str) -> str:
     """
-    @brief Convert fnmatch pattern into regex pattern (directory separator safe)
+    Convert fnmatch pattern into regex pattern (directory separator safe)
 
-    @param fn The fnmatch pattern
+    :param      fn:   The fnmatch pattern
 
-    @return The regex pattern
+    :returns:   The regex pattern
     """
-
     return (
         fnmatch.translate(fn)
         # match both UNIX/Windows directory separators
@@ -41,13 +42,12 @@ def fn_to_regex(fn: str) -> str:
 
 def merge_regexes(regexes: Iterable[str]) -> str:
     """
-    @brief Merge regexes into a single one
+    Merge regexes into a single one
 
-    @param regexes The regexes
+    :param      regexes:  The regexes
 
-    @return The merged regex
+    :returns:   The merged regex
     """
-
     merged = "(?:" + ")|(?:".join(regexes) + ")"
 
     return "" if merged == "(?:)" else merged
@@ -207,8 +207,8 @@ class TodoReviewCommand(sublime_plugin.TextCommand):
                 sublime.message_dialog("TodoReview: File must be saved first")
                 return
         else:
-            if not paths and settings.get("include_paths", False):
-                paths = settings.get("include_paths", False)
+            if not paths and settings.get("include_paths", []):
+                paths = settings.get("include_paths", [])
             if args.get("open_files", False):
                 filepaths = [v.file_name() or "" for v in window.views() if v.file_name()]
             if not args.get("open_files_only", False):
@@ -240,12 +240,14 @@ class TodoReviewCommand(sublime_plugin.TextCommand):
         view.set_name("TodoReview")
         view.assign_syntax(TODO_SYNTAX_FILE)
         view.set_scratch(True)
-        view.settings().set("todo_results", True)
-        view.settings().set("line_padding_bottom", 2)
-        view.settings().set("line_padding_top", 2)
-        view.settings().set("word_wrap", False)
-        view.settings().set("command_mode", True)
-        view.settings().set("is_widget", True)
+        view.settings().update({
+            "todo_results": True,
+            "line_padding_bottom": 2,
+            "line_padding_top": 2,
+            "word_wrap": False,
+            "command_mode": True,
+            "is_widget": True,
+        })
         return view
 
 
