@@ -251,6 +251,11 @@ class TodoReviewCommand(sublime_plugin.TextCommand):
             if view.settings().get("todo_results", False):
                 return view
         view = self.window.new_file()
+        self.set_todo_view_settings(view)
+        return view
+
+    @staticmethod
+    def set_todo_view_settings(view: sublime.View) -> None:
         view.set_name("TodoReview")
         view.assign_syntax(TODO_SYNTAX_FILE)
         view.set_scratch(True)
@@ -261,9 +266,7 @@ class TodoReviewCommand(sublime_plugin.TextCommand):
             "line_padding_top": 2,
             "word_wrap": False,
             "command_mode": True,
-            "is_widget": True,
         })
-        return view
 
 
 class TodoReviewRenderCommand(sublime_plugin.TextCommand):
@@ -425,3 +428,9 @@ class TodoReviewResultsCommand(sublime_plugin.TextCommand):
             )
             self.view.show(sublime.Region(region.a, region.a + 5))
             return
+
+
+class TodoReviewListener(sublime_plugin.EventListener):
+    def on_activated(self, view: sublime.View) -> None:
+        # fixes https://github.com/jfcherng-sublime/ST-TodoReview/issues/6
+        TodoReviewCommand.set_todo_view_settings(view)
