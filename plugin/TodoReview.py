@@ -3,6 +3,7 @@ from __future__ import annotations
 import datetime
 import fnmatch
 import itertools
+import operator
 import os
 import re
 import threading
@@ -307,7 +308,7 @@ class TodoReviewRenderCommand(sublime_plugin.TextCommand):
         w = settings.get("patterns_weight", {})
         results = sorted(self.results, key=lambda m: (str(w.get(m["patt"].upper(), "No title")), m["priority"]))
 
-        return itertools.groupby(results, key=lambda m: m["patt"])
+        return itertools.groupby(results, key=operator.itemgetter("patt"))
 
     def draw_header(self) -> None:
         assert settings
