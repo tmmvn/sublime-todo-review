@@ -1,34 +1,46 @@
 [
-    {
-        "id": "preferences",
-        "children": [
-            {
-                "caption": "Package Settings",
-                "id": "package-settings",
-                "children": [
-                    {
-                        "caption": "TodoReview",
-                        "children": [
-                            {
-                                "caption": "Settings",
-                                "command": "edit_settings",
-                                "args": {
-                                    "base_file": "${packages}/TodoReview/TodoReview.sublime-settings",
-                                    "default": "{\n\t$0\n}\n"
-                                }
-                            },
-                            {
-                                "caption": "Key Bindings",
-                                "command": "edit_settings",
-                                "args": {
-                                    "base_file": "${packages}/TodoReview/Default.sublime-keymap",
-                                    "default": "[\n\t$0\n]\n"
-                                }
-                            }
-                        ]
-                    }
-                ]
-            }
-        ]
-    }
+	{
+		"id": "preferences",
+		"children":
+		[
+			{
+				"caption": "Package Settings",
+				"id": "package-settings",
+				"children":
+				[
+					{
+						"caption": "TODOReview",
+						"children":
+						[
+							{
+								"command": "open_file",
+								"args": {"file": "${packages}/TODOReview/TODOReview.sublime-settings"},
+								"caption": "Settings – Default"
+							},
+							{
+								"command": "open_file",
+								"args": {"file": "${packages}/User/TODOReview.sublime-settings"},
+								"caption": "Settings – User"
+							},
+							{ "caption": "-" },
+							{
+								"command": "open_file",
+								"args": {
+									"file": "${packages}/TODOReview/Default.sublime-keymap"
+								},
+								"caption": "Key Bindings – Default"
+							},
+							{
+								"command": "open_file",
+								"args": {
+									"file": "${packages}/TODOReview/Default.sublime-mousemap"
+								},
+								"caption": "Key Bindings – Default"
+							}
+						]
+					}
+				]
+			}
+		]
+	}
 ]
